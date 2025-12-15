@@ -4,7 +4,7 @@
 
 矩阵作为一种存储向量的方式，是一种必须的数据结构。
 
-核心代码（使用重载运算符简化主程序）
+## Code
 
 **注意（重载输入输出流时）：** 要记得返回 `istream` 或 `ostream`，并且仔细思考，哪些需要**引用传参**，哪些**不能使用引用传参**。
 
@@ -13,14 +13,14 @@ struct Matrix {
 	int size_x,size_y,res[maxn][maxn];
 	inline void clear() {memset(res, 0, sizeof(res)); }
 	Matrix creatM(int size_x,int size_y){
-		register Matrix ep;
+		Matrix ep;
 		ep.size_x = size_x;
 		ep.size_y = size_y;
 		ep.clear();
 		return ep;
 	}
 	friend Matrix operator * (Matrix A, Matrix B) {
-		register Matrix ans=ans.creatM(A.size_x,B.size_y);
+		Matrix ans=ans.creatM(A.size_x,B.size_y);
 		if(A.size_y != B.size_x)return ans;
 		for (int i = 1; i <= A.size_x; i++)
 			for (int j = 1; j <= B.size_y; j++)
@@ -47,9 +47,6 @@ struct Matrix {
 };
 ```
 
-板子看起来有一点长
-
-~~实际上挺好写的qwq~~
 
 ## 例题1
 
@@ -64,19 +61,19 @@ struct Matrix {
 	int size_x,size_y,res[maxn][maxn];
 	inline void clear() {memset(res, 0, sizeof(res)); }
 	Matrix creatM(int size_x,int size_y){//普通Matrix 
-		register Matrix ep;
+		Matrix ep;
 		ep.size_x = size_x;
 		ep.size_y = size_y;
 		ep.clear();
 		return ep;
 	}
 	Matrix creatI(int size_y){//单位Matrix 
-		register Matrix ep= ep.creatM(size_y,size_y);
+		Matrix ep= ep.creatM(size_y,size_y);
 		for(int i=1;i<=size_y;i++)ep.res[i][i] = 1;
 		return ep;
 	}
 	friend Matrix operator * (Matrix A, Matrix B) {
-		register Matrix ans=ans.creatM(A.size_x,B.size_y);
+		Matrix ans=ans.creatM(A.size_x,B.size_y);
 		if(A.size_y != B.size_x)return ans;
 		for (int i = 1; i <= A.size_x; i++)
 			for (int j = 1; j <= B.size_y; j++)
@@ -138,24 +135,14 @@ $$
 \begin{bmatrix} a_x\\a_{x-1}\\a_{x-2} \end{bmatrix}
 $$
 
-3. 设计转移矩阵
-   通过**列表系数法**~~（我自己起的名字）~~
+3. 设计转移矩阵:**列表看系数**
    |  | $a_{x-1}$ | $a_{x-2}$ | $a_{x-3}$ |
    |--|----|----|----|
    | $a_x$ | $1$ | $0$ | $1$ |
    | $a_{x-1}$ | $1$ | $0$ | $0$ |
    | $a_{x-2}$ | $0$ | $1$ | $0$ |
 
-**Explain**
-$$
-a_{x} = 1 \times a_{x-1} + 0 \times a_{x-2} + 1 \times a_{x-3}
-$$
-$$
-a_{x-1} = 1 \times a_{x-1} + 0 \times a_{x-2} + 0 \times a_{x-3}
-$$
-$$
-a_{x-2} = 0 \times a_{x-1} + 1 \times a_{x-2} + 0 \times a_{x-3}
-$$
+    **Explain**$$a_{x} = 1 \times a_{x-1} + 0 \times a_{x-2} + 1 \times a_{x-3}$$ $$a_{x-1} = 1 \times a_{x-1} + 0 \times a_{x-2} + 0 \times a_{x-3}$$ $$a_{x-2} = 0 \times a_{x-1} + 1 \times a_{x-2} + 0 \times a_{x-3}$$
 
 把系数填到表里我们就得到了**转移矩阵**
 
@@ -163,7 +150,6 @@ $$
 \begin{bmatrix} 1 & 0 & 1 \\ 1 & 0 & 0 \\ 0 & 1 & 0 \end{bmatrix}
 $$
 
-**警钟撅烂（关于矩阵初始化）：** 要看清楚初始的位置，千万别看反了！！！
 
 ```cpp
 #include <bits/stdc++.h>
