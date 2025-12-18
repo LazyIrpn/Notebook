@@ -4,7 +4,7 @@
 
 - [SPFA](#spfabellmanford--队列优化)
 - [Dijkstra](#dijkstra)
-- [Floyd](#Floyd)
+- [Floyd](#floyd)
 
 
 **图论最短路算法核心比较表**
