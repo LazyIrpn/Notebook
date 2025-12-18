@@ -1,6 +1,6 @@
 # 最短路算法
 
-## Menu
+## Introduction
 
 - [SPFA](#spfabellmanford--队列优化)
 - [Dijkstra](#dijkstra)
