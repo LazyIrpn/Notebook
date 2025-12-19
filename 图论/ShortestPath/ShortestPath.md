@@ -5,6 +5,7 @@
 - [SPFA](#spfabellmanford--队列优化)
 - [Dijkstra](#dijkstra)
 - [Floyd](#floyd)
+- [最短路算法的应用](#Application)
 
 
 **图论最短路算法核心比较表**
@@ -65,8 +66,9 @@ B <--> C
 A <--> |可由左侧关系推出|C
 ```
 
+[**Problem**](https://www.luogu.com.cn/problem/B3611)可以帮助你更好的理解它的实际意义。
 
-[传递闭包的**例题**](https://www.luogu.com.cn/problem/B3611)可以帮助你更好的理解它的实际意义。
+[**Code**](/Code/B3611.cpp)
 
 既然我们已经可以判定两点之间是否可达，我们尝试更近一步推出两点之间的最短路。
 
@@ -81,64 +83,6 @@ Floyd-Warshall 是解决**全源最短路径 (APSP)** 问题的经典算法。
 
 初始时，直接连接的两点距离为边权，不连接的点对距离为 $+\infty$，对角线元素为 $0$。
 
-```cpp
-#include<bits/stdc++.h>
-#define int long long
-using namespace std;
-int n,m;
-namespace Graph {
-    const int maxn = 5e2+5;
-    const int INF = 1e18;
-    int dis[maxn][maxn];
-    int u,v,w;
-    void add() {
-        cin>>u>>v>>w;
-        dis[u][v] = min(dis[u][v], (int)w);
-        return;
-    }
-    void Floyd(int n) {
-        // k 为中间点：依次考虑经过点 1, 2, ..., n 的路径
-        for(int k=1; k<=n; k++) {
-            // i 为起点，j 为终点
-            for(int i=1; i<=n; i++) {
-                for(int j=1; j<=n; j++) {
-                    if(dis[i][k] != INF && dis[k][j] != INF)
-                        dis[i][j] = min(dis[i][j], dis[i][k] + dis[k][j]);
-                }
-            }
-        }
-    }
-    bool check_neg_cycle(int n) {
-        for(int i=1; i<=n; i++)
-            if(dis[i][i] < 0)return true;
-        return false;
-    }
-    void print(int n){
-        if(check_neg_cycle(n)){
-            cout<<-1<<endl;
-            return;
-        }
-        for(int i=1;i<=n;i++){
-            for(int j=1;j<=n;j++)
-                cout<<dis[i][j]<<' ';
-            cout<<endl;
-        }
-        return;
-    }
-}
-signed main() {
-    cin.tie(0)->sync_with_stdio(0);
-    cin>>n>>m;
-    for(int i=1;i<=n;i++)
-        for(int j=1;j<=n;j++)
-            Graph::dis[i][j] = (i==j)?0:Graph::INF;
-    while(m--)Graph::add();
-    Graph::Floyd(n);
-    Graph::print(n);
-    return 0;
-}
-```
-
 **算法核心：三重循环**
 
 - **第一层循环** $k=1$ 到 $n$：考虑经过中间点 $k$ 的路径。
@@ -149,8 +93,9 @@ signed main() {
 
 在 Floyd 算法完成后，若存在 $dis[i][i] < 0$，则图中存在负权环（经过点 $i$ 的环权之和为负）。
 
-收下模板[P1119](https://www.luogu.com.cn/problem/P1119)
+Problem : [P1119 灾后重建](https://www.luogu.com.cn/problem/P1119)
 
+Code : [**Code**](/Code/P1119.cpp)
 
 ## SPFA（BellmanFord + 队列优化）
 
@@ -164,65 +109,7 @@ signed main() {
 
 初始时源点 $dis_{root}$ 为 $0$，其它点 $dis_i = inf$。
 
-```cpp
-#include<bits/stdc++.h>
-#define int long long
-using namespace std;
-int n,m,s;
-namespace Graph {
-	struct Edge {
-		int v,w;
-	};
-	constexpr int maxn = 1e4+5;
-	int dis[maxn],u,v,w;
-	vector<Edge> g[maxn];
-	bool NC;//hasNegativeCycle
-	void add() {
-		cin>>u>>v>>w;
-		g[u].push_back({v,w});
-		return;
-	}
-	void BF(int n,int x) {
-		for(int i=1; i<=n; i++)dis[i] = INT_MAX;
-		dis[s] = 0;
-		for(int i=0; i<n-1; i++) { //若存在最短路（无可达负环），最短路最多包括n-1条边
-			for(int j=1; j<=n; j++) { //遍历所有边
-				if(dis[j] == INT_MAX)continue;//inf + const = inf
-				for(Edge e:g[j])
-					dis[e.v] = min(dis[e.v],dis[j] + e.w);
-			}
-		}
-		//再遍历一次，检测是否有可达负环
-		for(int j=1; j<=n; j++) { //遍历所有边
-			if(dis[j] == INT_MAX)continue;//inf + const = inf
-			for(Edge e:g[j]){
-				if(dis[e.v]>dis[j] + e.w){
-					NC = true;
-					return;
-				}
-			}
-		}
-		return;
-	}
-	void print(int n){
-		if(NC){
-			cout<<-1<<endl;
-			return;
-		}
-		for(int i=1;i<=n;i++)cout<<dis[i]<<' ';
-		cout<<endl;
-		return;
-	}
-
-}
-signed main() {
-	cin>>n>>m>>s;
-	while(m--)Graph::add();
-	Graph::BF(n,s);
-	Graph::print(n);
-	return 0;
-}
-```
+[**Code**](/Code/BellmanFord.cpp)
 
 ### SPFA
 
@@ -246,55 +133,36 @@ SPFA（Shortest Path Faster Algorithem），是基于 BellmanFord 的队列优�
 由于只有上一次对 $dis_i$ 产生更新的点才会对下一次更新产生贡献，于是想到利用类似 BFS 的方法（使用队列）对 BellmanFord 进行优化。
 
 ```cpp 
-namespace Graph{
-    int nc,dis[maxn],cnt[maxn],u,v,w;
-    struct Edge{
-        int v,w;
-    };
-    bool inq[maxn];
-    void spfa(int s){
-        cin>>n>>m;
-        vector<Edge>g[maxn];
-        while(m--){
-            cin>>u>>v>>w;
-            g[u].push_back({v,w});
-            if(w >= 0)g[v].push_back({u,w});
-        }
-        nc = false;
-        memset(inq,0,sizeof(inq));
-        memset(cnt,0,sizeof(cnt));
-        memset(dis,0x3f,sizeof(dis));
-        queue<int> q;
-        dis[s] = 0;
-        q.push(s);
-        inq[s] = true;
-        while(!q.empty()){
-            u = q.front();
-            q.pop();inq[u] = false;
-            for(Edge p:g[u]){
-                v = p.v,w = p.w;
-                if(dis[v] > dis[u] + w){
-                    dis[v] = dis[u] + w;
-                    cnt[v] = cnt[u] + 1;
-                    if(cnt[v] >= n){
-                        nc = true;
-                        break;
-                    }
-                    if(!inq[v]){
-                        q.push(v);
-                        inq[v] = true;
+int n,m,u,v,w,dis[maxn],cnt[maxn];
+bool inq[maxn];
+vector<pii> g[maxn];
+queue<int>q;
+void in(int x){inq[x] = true,q.push(x),cnt[x]++;};
+int out(){int x = q.front();q.pop();return inq[x] = false,x;};
+void spfa(int s){
+    in(s);
+    dis[s] = 0;
+    while(!q.empty()){
+        u = out();
+        for(auto [v,w]:g[u]){
+            if(dis[v] > dis[u] + w){
+                dis[v] = dis[u] + w;
+                if(!inq[v]){
+                    in(v);
+                    if(cnt[v] == n+1){
+                        cout<<"NO SOLUTION";
+                        exit(0);
                     }
                 }
             }
-
         }
-        if(nc)cout<<"YES\n";
-        else cout<<"NO\n";
     }
 }
 ```
 
-这样我们就可以轻松愉快的收下[这道模板题](https://www.luogu.com.cn/problem/P3371)的 **弱化版**
+[**Complete Code**](/Code/P3371.cpp)
+
+Problem : [P3371 【模板】单源最短路径（弱化版）](https://www.luogu.com.cn/problem/P3371)
 
 
 ## Dijkstra
@@ -366,63 +234,9 @@ namespace Graph {
 
 **时间复杂度 $O((V+E) \log V)$**
 
-```cpp
-#include<bits/stdc++.h>
-#define int long long
-using namespace std;
-int n,m,s;
-namespace Graph {
-    struct Edge {
-        int v,w;
-    };
-    struct PII{
-        int dis,k;
-        inline friend bool operator < (PII a,PII b){return a.dis>b.dis;} //注意不要把大于号写成小于号
-    };
-    constexpr int maxn = 1e5+5;
-    int dis[maxn],u,v,w,mind,cnt[maxn];
-    vector<Edge> g[maxn];
-    priority_queue< PII > pq;
-    bool vis[maxn];
-    void add() {
-        cin>>u>>v>>w;
-        g[u].push_back({v,w});
-        return;
-    }
-    void Dijkstra(int n,int s){
-        for(int i=1;i<=n;i++)dis[i] = INT_MAX;
-        dis[s] = 0;
-        pq.push({0,s});
-        while(!pq.empty()){
-            u = pq.top().k;
-            pq.pop();
-            if(vis[u])continue;
-            vis[u] = true;
-            for(Edge e:g[u]){
-                v = e.v,w = e.w;
-                if(dis[v] > dis[u] + w){
-                    dis[v] = dis[u] + w;
-                    pq.push({dis[v],v});
-                }
-            }
-        }
-    }
-    void print(int n){
-        for(int i=1;i<=n;i++)cout<<dis[i]<<' ';
-        return;
-    }
-    
-}
-signed main() {
-    cin>>n>>m>>s;
-    while(m--)Graph::add();
-    Graph::Dijkstra(n,s);
-    Graph::print(n);
-    return 0;
-}
-```
+[**Code**](/Code/P4779.cpp)
 
-收下模板[P4479](https://www.luogu.com.cn/problem/P4779)
+Problem : [P4779 【模板】单源最短路径（标准版）](https://www.luogu.com.cn/problem/P4779)
 
 ## Johnson全源最短路
 
@@ -506,111 +320,14 @@ Johnson 算法的精妙之处在于它**巧妙地结合了 Bellman-Ford 算法�
      - 这个公式直接来自 $w'(p) = w(p) + h(u) - h(v)$ 的推广。因为 $\delta'(u, v)$ 是 $G'$ 中从 $u$ 到 $v$ 的最小 $w'$ 值，$\delta(u, v)$ 是 $G$ 中从 $u$ 到 $v$ 的最小 $w$ 值，它们之间的关系就是 $\delta'(u, v) = \delta(u, v) + h(u) - h(v)$。移项即得还原公式。
 
 
-### Code
-```cpp
-#include<bits/stdc++.h>
-#define int long long
-using namespace std;
-constexpr int maxn = 3e3 + 5, inf = 1e9;
-int ans;
-namespace G {
-	struct Edge {
-		int v, w;
-	};
-	struct PII{
-		int dis,k;
-		inline friend bool operator < (PII a,PII b){return a.dis>b.dis;}
-	};
-	vector<Edge>g[maxn];
-	int n, m, u, v, w;
-	void add_edge() {
-		for (int i = 1; i <= m; i++) {
-			cin >> u >> v >> w;
-			g[u].push_back({v, w});
-		}
-		for (int i = 1; i <= n; i++) {
-			g[0].push_back({i, w});
-		}
-	}
-	int h[maxn], dis[maxn], cnt[maxn];
-	bool inq[maxn], vis[maxn], nc = false;
-	queue<int>q;
-	priority_queue<PII>pq;
-	void qin(int p) {
-		q.push(p);
-		inq[p] = true;
-		cnt[p]++;
-	}
-	int qout() {
-		int p = q.front();
-		q.pop();
-		inq[p] = false;
-		return p;
-	}
-	void SPFA() {
-		for (int i = 1; i <= n; i++)h[i] = inf;
-		h[0] = 0;
-		qin(0);
-		while (!q.empty() && !nc) {
-			u = qout();
-			if (h[u] == inf)continue;
-			for (auto [v, w] : g[u]) {
-				if (h[v] > h[u] + w) { //find an update
-					h[v] = h[u] + w;
-					if (!inq[v]) {
-						qin(v);
-						if (cnt[v] > n)nc = true;
-					}
-				}
-			}
-		}
-	}
-	void remake() {
-		for (int u = 1; u <= n; u++)
-			for (auto& [v, w] : g[u])
-				w += h[u] - h[v];
-	}
-	void Dijkstra(int s) {
-		for (int i = 1; i <= n; i++)dis[i] = inf,vis[i] = false;
-		pq.push({dis[s] = 0,s});
-		while(!pq.empty()){
-			u = pq.top().k;pq.pop();
-			if(vis[u])continue;
-			vis[u] = true;
-			for(auto [v,w]:g[u]){
-				if(dis[v] > dis[u] + w)pq.push({dis[v] = dis[u] + w,v});
-			}
-		}
-	}
-	void undo(int u){
-		for(int v=1;v<=n;v++)if(dis[v] != inf)dis[v] -= h[u] - h[v];//记得特判dis = inf的情况
-	}
-}
-using namespace G;
-signed main() {
-	ios::sync_with_stdio(0), cin.tie(0), cout.tie(0);
-	cin >> n >> m;
-	add_edge();
-	SPFA();
-	if (nc) {
-		cout << -1;
-		return 0;
-	}
-	remake();
-	for(int i=1;i<=n;i++){
-		ans = 0;
-		Dijkstra(i);
-		undo(i);
-		for(int j=1;j<=n;j++)ans+=1LL * j * dis[j];
-		cout<<ans<<endl;
-	}
-	return 0;
-}
-```
+### [Code](/Code/P5905.cpp)
 
-无伤通过[模版题](https://www.luogu.com.cn/problem/P5905)
+Problem : [P5905 【模板】全源最短路（Johnson）](https://www.luogu.com.cn/problem/P5905)
 
-## 最短路trick之分层图
+## Application
+
+
+### 分层图-动态规划
 
 一般的，我们使用 $dis$ 数组来记录每个节点的最短路。
 
@@ -640,3 +357,7 @@ if(dis[v][k_v] > /*B*/){
 ```
 
 用它替换掉 `Dijkstra` 里面的松弛操作即可（依照题意修改 `f1` `f2` `A` `B` 的内容即可）
+
+### 求解不等式组
+
+见 [DiffConstraints](../DiffConstraints/DC.md)。
