@@ -1,9 +1,7 @@
 name: Convert All Markdown to PDF
 
 on:
-  push:
-    branches: [ main, master ]
-  workflow_dispatch:  # 允许手动触发
+  workflow_dispatch:  # only手动触发
     inputs:
       directory:
         description: '搜索目录 (默认: 全仓库)'
