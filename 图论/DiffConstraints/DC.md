@@ -48,5 +48,5 @@ Problem : [P5960 【模板】差分约束](https://www.luogu.com.cn/problem/P596
 
 这就用到了差分约束中**解的平移性**，我们可以设，$M = \min_{1 \le i \le n}{T_i}$，这样将每个解**同时减去** $M$，就会得到一组合法的解（最小值等于0）
 
-#### [Code](/Code/P1260.md)
+#### [Code](/Code/P1260.cpp)
 
