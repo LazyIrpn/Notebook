@@ -1,0 +1,154 @@
+name: Convert All Markdown to PDF
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:  # 允许手动触发
+    inputs:
+      directory:
+        description: '搜索目录 (默认: 全仓库)'
+        required: false
+        default: '.'
+      exclude_pattern:
+        description: '排除模式 (正则表达式)'
+        required: false
+        default: 'node_modules|\.git|\.github|dist|build|vendor'
+
+jobs:
+  convert-markdown:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Pandoc and LaTeX
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y pandoc texlive-xetex texlive-fonts-recommended
+        echo "✅ 转换工具安装完成"
+        
+    - name: Find all markdown files
+      id: find-files
+      run: |
+        SEARCH_DIR="${{ github.event.inputs.directory || '.' }}"
+        EXCLUDE_PATTERN="${{ github.event.inputs.exclude_pattern || 'node_modules|\.git' }}"
+        
+        # 查找所有 .md 文件
+        FILES=$(find "$SEARCH_DIR" -name "*.md" -type f | grep -vE "$EXCLUDE_PATTERN" | sort)
+        COUNT=$(echo "$FILES" | wc -l)
+        
+        echo "📄 找到 $COUNT 个 Markdown 文件"
+        echo "file_count=$COUNT" >> $GITHUB_OUTPUT
+        
+        # 保存文件列表到临时文件
+        echo "$FILES" > /tmp/md_files.txt
+        
+    - name: Create output directory
+      run: |
+        mkdir -p generated_pdfs
+        echo "📁 输出目录: generated_pdfs/"
+        
+    - name: Convert to PDF
+      if: steps.find-files.outputs.file_count != '0'
+      run: |
+        echo "🔄 开始批量转换..."
+        
+        TOTAL_FILES=0
+        SUCCESS_COUNT=0
+        FAILED_FILES=""
+        
+        while IFS= read -r FILE; do
+          if [ -z "$FILE" ]; then continue; fi
+          
+          TOTAL_FILES=$((TOTAL_FILES + 1))
+          echo ""
+          echo "--- 处理 [$TOTAL_FILES]: $FILE ---"
+          
+          # 生成输出路径，保持目录结构
+          REL_PATH="${FILE#./}"
+          PDF_PATH="generated_pdfs/${REL_PATH%.md}.pdf"
+          
+          # 创建输出目录
+          mkdir -p "$(dirname "$PDF_PATH")"
+          
+          # 转换为 PDF
+          if pandoc "$FILE" \
+            -o "$PDF_PATH" \
+            --pdf-engine=xelatex \
+            -V geometry:margin=1in \
+            -V colorlinks=true \
+            -V linkcolor=blue \
+            --toc; then
+            
+            echo "  ✅ 生成: $PDF_PATH"
+            SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
+          else
+            echo "  ❌ 失败: $FILE"
+            FAILED_FILES="$FAILED_FILES\n- $FILE"
+          fi
+          
+        done < /tmp/md_files.txt
+        
+        echo ""
+        echo "📊 转换完成！"
+        echo "  成功: $SUCCESS_COUNT/$TOTAL_FILES"
+        
+        if [ -n "$FAILED_FILES" ]; then
+          echo "  失败的文件:"
+          echo -e "$FAILED_FILES"
+          echo "::warning::有 $(echo -e "$FAILED_FILES" | wc -l) 个文件转换失败"
+        fi
+        
+    - name: Generate index
+      run: |
+        echo "📋 生成索引文件..."
+        
+        cat > generated_pdfs/INDEX.md << 'EOF'
+        # 📄 PDF 文档索引
+        
+        本目录包含自动从 Markdown 转换生成的 PDF 文件。
+        
+        | 文件 | PDF 版本 | 原始文件 |
+        |------|----------|----------|
+        EOF
+        
+        while IFS= read -r FILE; do
+          if [ -z "$FILE" ]; then continue; fi
+          
+          REL_PATH="${FILE#./}"
+          PDF_FILE="${REL_PATH%.md}.pdf"
+          PDF_PATH="generated_pdfs/$PDF_FILE"
+          
+          if [ -f "$PDF_PATH" ]; then
+            GITHUB_URL="https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/$REL_PATH"
+            echo "| $REL_PATH | [📥 下载]($PDF_FILE) | [📄 查看]($GITHUB_URL) |" >> generated_pdfs/INDEX.md
+          fi
+        done < /tmp/md_files.txt
+        
+        echo "" >> generated_pdfs/INDEX.md
+        echo "**生成时间**: $(date '+%Y-%m-%d %H:%M:%S')" >> generated_pdfs/INDEX.md
+        echo "**触发者**: ${{ github.actor }}" >> generated_pdfs/INDEX.md
+        
+    - name: Upload PDFs as artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: generated-pdfs
+        path: generated_pdfs/
+        retention-days: 30
+        
+    - name: Commit PDFs to repository (可选)
+      if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+      run: |
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+        
+        # 只提交 PDF 文件
+        git add generated_pdfs/
+        
+        if git diff --cached --quiet; then
+          echo "📝 没有更改需要提交"
+        else
+          git commit -m "📄 自动生成 PDF 文档 [skip ci]"
+          git push
+          echo "✅ PDF 文件已提交到仓库"
+        fi
