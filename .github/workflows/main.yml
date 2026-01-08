@@ -1,27 +1,49 @@
-name: Convert with community action
+name: Convert All Markdown to PDF
 
 on: [push, workflow_dispatch]
 
 jobs:
-  convert:
+  convert-all-md:
     runs-on: ubuntu-latest
     
     steps:
     - uses: actions/checkout@v4
     
-    - name: Convert markdown to PDF
-      uses: docker://pandoc/latex:2.9
-      with:
-        args: >
-          --from=markdown
-          --to=pdf
-          --output=./output.pdf
-          --pdf-engine=xelatex
-          --variable=geometry:margin=1in
-          ./README.md
+    - name: Setup environment
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y pandoc texlive-xetex
+        
+    - name: Find and convert all .md files
+      run: |
+        mkdir -p generated_pdfs
+        
+        # 查找所有 .md 文件
+        find . -name "*.md" -type f | while read file; do
+          # 排除不需要的目录
+          if [[ $file == *"node_modules"* ]] || [[ $file == *".git"* ]] || [[ $file == *".github"* ]]; then
+            continue
+          fi
           
-    - name: Upload result
+          echo "处理: $file"
+          
+          # 生成输出路径
+          rel_path="${file#./}"
+          pdf_path="generated_pdfs/${rel_path%.md}.pdf"
+          
+          # 创建输出目录
+          mkdir -p "$(dirname "$pdf_path")"
+          
+          # 转换为 PDF
+          if pandoc "$file" -o "$pdf_path" --pdf-engine=xelatex; then
+            echo "  ✅ 成功: $pdf_path"
+          else
+            echo "  ❌ 失败: $file"
+          fi
+        done
+        
+    - name: Upload results
       uses: actions/upload-artifact@v4
       with:
-        name: pdf-output
-        path: ./output.pdf
+        name: pdf-documents
+        path: generated_pdfs/
