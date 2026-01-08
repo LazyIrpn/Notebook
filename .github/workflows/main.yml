@@ -1,0 +1,27 @@
+name: Convert with community action
+
+on: [push, workflow_dispatch]
+
+jobs:
+  convert:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Convert markdown to PDF
+      uses: docker://pandoc/latex:2.9
+      with:
+        args: >
+          --from=markdown
+          --to=pdf
+          --output=./output.pdf
+          --pdf-engine=xelatex
+          --variable=geometry:margin=1in
+          ./README.md
+          
+    - name: Upload result
+      uses: actions/upload-artifact@v4
+      with:
+        name: pdf-output
+        path: ./output.pdf
